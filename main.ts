@@ -20,7 +20,7 @@
 // The program writes exactly those three digits, nothing else, to
 // /output/entry.txt: no words, no punctuation, no trailing newline.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 // The entrant's honest count of open browser tabs at the moment of entry.
 const TABS = 287;
@@ -40,6 +40,15 @@ function main(): void {
   const entry = validate(TABS);
   mkdirSync("/output", { recursive: true });
   writeFileSync("/output/entry.txt", entry, "utf8");
+  // Read-back guard: the file on disk must be exactly what we validated.
+  // If a stray newline or a partial write ever crept in, fail loudly
+  // instead of submitting a silently wrong entry.
+  const onDisk = readFileSync("/output/entry.txt", "utf8");
+  if (onDisk !== entry) {
+    throw new Error(
+      `read-back mismatch: expected ${JSON.stringify(entry)}, found ${JSON.stringify(onDisk)}`,
+    );
+  }
 }
 
 main();
